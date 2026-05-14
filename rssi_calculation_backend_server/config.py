@@ -1,53 +1,38 @@
 """
-Configuration — Tuned for stable KNN positioning.
+Configuration — 6.0m × 2.0m room, 4×3 grid (12 cells).
 """
 
 # =============================================================================
-# ROUTER POSITIONS (4m × 2m rectangle)
+# ROOM DIMENSIONS
+# =============================================================================
+AREA_W = 6.0   # Width in meters
+AREA_H = 2.0   # Depth in meters
+
+# =============================================================================
+# ROUTER POSITIONS (corners of the 6.0m × 2.0m room)
 # =============================================================================
 ROUTER_POSITIONS = [
-    (0.0, 0.0),   # router_0 — Bottom-left
-    (4.0, 0.0),   # router_1 — Bottom-right
-    (0.0, 2.0),   # router_2 — Top-left
-    (4.0, 2.0),   # router_3 — Top-right
+    (0.0,    0.0),    # router_0 — Bottom-left
+    (AREA_W, 0.0),    # router_1 — Bottom-right
+    (0.0,    AREA_H), # router_2 — Top-left
+    (AREA_W, AREA_H), # router_3 — Top-right
 ]
 
 # =============================================================================
-# RSSI SMOOTHING
-# Heavy EMA to stabilize RSSI before feeding to KNN.
-# With KNN, even 1-2 dBm change can jump cells, so we smooth aggressively.
+# GRID — 4 columns × 3 rows = 12 cells
 # =============================================================================
-EMA_ALPHA = 0.15    # Was 0.3. Lower = much smoother RSSI (less jitter)
-
-# =============================================================================
-# WEIGHTED CENTROID (fallback only — used when no KNN model)
-# =============================================================================
-SHARPNESS = 2.0
-
-# =============================================================================
-# KALMAN FILTER
-# Tuned for "standing still should not move the dot":
-#   - Low process noise = assume person moves slowly
-#   - High measurement noise = don't trust each KNN prediction too much
-# =============================================================================
-PROCESS_NOISE = 0.02     # Was 0.1. Much lower = dot barely moves on noise
-MEASUREMENT_NOISE = 1.0  # Was 0.3. Much higher = smooths out KNN jumps
-
-# =============================================================================
-# GRID — for fingerprinting data collection (5×3 = 15 cells)
-# =============================================================================
-GRID_COLS = 5
+GRID_COLS = 4
 GRID_ROWS = 3
-CELL_W = 4.0 / GRID_COLS  # 0.8m
-CELL_H = 2.0 / GRID_ROWS  # ~0.667m
+CELL_W = AREA_W / GRID_COLS
+CELL_H = AREA_H / GRID_ROWS
 
 # =============================================================================
-# AREA BOUNDS
+# AREA BOUNDS (for clamping)
 # =============================================================================
 AREA_X_MIN = -0.2
-AREA_X_MAX = 4.2
+AREA_X_MAX = AREA_W + 0.2
 AREA_Y_MIN = -0.2
-AREA_Y_MAX = 2.2
+AREA_Y_MAX = AREA_H + 0.2
 
 # =============================================================================
 # SERVER

@@ -24,9 +24,9 @@ class WifiScannerService extends ChangeNotifier {
   // 4 router BSSIDs — user configurable
   final List<RouterConfig> routers = [
     RouterConfig(bssid: '', label: 'Router 0 (0,0)'),
-    RouterConfig(bssid: '', label: 'Router 1 (4,0)'),
-    RouterConfig(bssid: '', label: 'Router 2 (0,2)'),
-    RouterConfig(bssid: '', label: 'Router 3 (4,2)'),
+    RouterConfig(bssid: '', label: 'Router 1 (3.2,0)'),
+    RouterConfig(bssid: '', label: 'Router 2 (0,3.0)'),
+    RouterConfig(bssid: '', label: 'Router 3 (3.2,3.0)'),
   ];
 
   // Getters

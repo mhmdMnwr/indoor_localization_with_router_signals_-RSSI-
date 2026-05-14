@@ -294,8 +294,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         const pad = 20.0;
         final mapW = w - pad * 2;
         final mapH = h - pad * 2;
-        final dotX = pad + (pos.x / 4.0).clamp(0.0, 1.0) * mapW;
-        final dotY = pad + (1 - pos.y / 2.0).clamp(0.0, 1.0) * mapH;
+        final dotX = pad + (pos.x / 3.2).clamp(0.0, 1.0) * mapW;
+        final dotY = pad + (1 - pos.y / 3.0).clamp(0.0, 1.0) * mapH;
 
         return Stack(children: [
           Positioned(left: pad, top: pad, width: mapW, height: mapH,
@@ -335,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Positioned(left: pad + 4, bottom: pad + 4,
             child: const Text('(0,0)', style: TextStyle(fontSize: 9, color: AppTheme.textMuted))),
           Positioned(right: pad + 4, top: pad + 4,
-            child: const Text('(4,2)', style: TextStyle(fontSize: 9, color: AppTheme.textMuted))),
+            child: const Text('(3.2,3.0)', style: TextStyle(fontSize: 9, color: AppTheme.textMuted))),
         ]);
       }),
     );

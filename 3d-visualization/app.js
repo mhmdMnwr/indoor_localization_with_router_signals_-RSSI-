@@ -1,32 +1,32 @@
 /**
  * RSSI Indoor Positioning — 3D Visualization
  * 
- * 4×2m room with 15 grid squares (5 cols × 3 rows) as reference.
- * Character moves smoothly across the floor with continuous interpolation.
- * Grid is visual reference only — not movement constraint.
+ * 3.2×3.0m room with 12 grid squares (4 cols × 3 rows).
+ * Character moves smoothly between cell centers.
+ * Grid is visual reference only.
  */
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ═══════════════════════════════════════════════════════════════
-// Room Configuration — 4m × 2m
+// Room Configuration
 // ═══════════════════════════════════════════════════════════════
-const AREA_W = 4.0;
+const AREA_W = 6.0;
 const AREA_H = 2.0;
-const GRID_COLS = 5;
+const GRID_COLS = 4;
 const GRID_ROWS = 3;
-const CELL_W = AREA_W / GRID_COLS;  // 0.8m
-const CELL_H = AREA_H / GRID_ROWS;  // ~0.667m
+const CELL_W = AREA_W / GRID_COLS;  // 1.5m
+const CELL_H = AREA_H / GRID_ROWS;  // 0.66m
 const PERSON_HEIGHT = 0.35;
-const LERP_SPEED = 6.0;   // Higher = faster, smoother following
+const LERP_SPEED = 6.0;
 
 // Router corner positions
 const ROUTERS = [
-    { x: 0, y: 0, label: 'R0' },
-    { x: 4, y: 0, label: 'R1' },
-    { x: 0, y: 2, label: 'R2' },
-    { x: 4, y: 2, label: 'R3' },
+    { x: 0,      y: 0,      label: 'R0' },
+    { x: AREA_W, y: 0,      label: 'R1' },
+    { x: 0,      y: AREA_H, label: 'R2' },
+    { x: AREA_W, y: AREA_H, label: 'R3' },
 ];
 
 // Flip Y→Z so y=0 is at bottom of screen (near camera)
@@ -73,8 +73,8 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x0a0e17, 0.04);
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(2, 5.5, 6.5);
-camera.lookAt(2, 0, 1);
+camera.position.set(AREA_W / 2, 6, 7.5);
+camera.lookAt(AREA_W / 2, 0, AREA_H / 2);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(AREA_W / 2, 0, AREA_H / 2);
@@ -112,51 +112,40 @@ ROUTERS.forEach(r => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// Floor — 4×2m with 5×3 grid (15 cells)
+// Floor — 3.2×3.0m with 4×3 grid (12 cells)
 // ═══════════════════════════════════════════════════════════════
 function createFloor() {
     const group = new THREE.Group();
 
-    // Outer floor
+    // Smooth Clean Floor
     const floorGeo = new THREE.PlaneGeometry(AREA_W + 2, AREA_H + 2);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8, metalness: 0.1 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(AREA_W / 2, -0.01, AREA_H / 2);  // center stays same
     floor.receiveShadow = true;
     group.add(floor);
 
-    // Grid cells — alternating checkerboard pattern
-    const cellColors = [0x1a2332, 0x1e293b];
-    GRID_CELLS.forEach(cell => {
-        const geo = new THREE.PlaneGeometry(CELL_W - 0.015, CELL_H - 0.015);
-        const mat = new THREE.MeshStandardMaterial({
-            color: cellColors[(cell.col + cell.row) % 2],
-            roughness: 0.85,
-        });
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.rotation.x = -Math.PI / 2;
-        mesh.position.set(cell.cx, 0.001, mapZ(cell.cy));
-        mesh.receiveShadow = true;
-        group.add(mesh);
+    // Subtle Dot Pattern instead of heavy grid
+    const dotGeo = new THREE.BufferGeometry();
+    const dotMat = new THREE.PointsMaterial({ 
+        color: 0x94a3b8, 
+        size: 0.03, 
+        sizeAttenuation: true, 
+        transparent: true, 
+        opacity: 0.3 
     });
-
-    // Grid lines
-    const gridMat = new THREE.LineBasicMaterial({ color: 0x475569, transparent: true, opacity: 0.4 });
-    for (let i = 0; i <= GRID_COLS; i++) {
-        const x = i * CELL_W;
-        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(x, 0.003, mapZ(0)), new THREE.Vector3(x, 0.003, mapZ(AREA_H))
-        ]), gridMat));
+    const points = [];
+    // Place dots at half-cell intervals for a nice subtle pattern
+    for (let x = 0; x <= AREA_W; x += CELL_W / 2) {
+        for (let y = 0; y <= AREA_H; y += CELL_H / 2) {
+            points.push(new THREE.Vector3(x, 0.002, mapZ(y)));
+        }
     }
-    for (let i = 0; i <= GRID_ROWS; i++) {
-        const y = i * CELL_H;
-        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0.003, mapZ(y)), new THREE.Vector3(AREA_W, 0.003, mapZ(y))
-        ]), gridMat));
-    }
+    dotGeo.setFromPoints(points);
+    group.add(new THREE.Points(dotGeo, dotMat));
 
-    // Border glow
+    // Room Border outline
     const borderPts = [
         new THREE.Vector3(0, 0.004, mapZ(0)),
         new THREE.Vector3(AREA_W, 0.004, mapZ(0)),
@@ -169,29 +158,9 @@ function createFloor() {
         new THREE.LineBasicMaterial({ color: 0x6ee7b7, transparent: true, opacity: 0.4 })
     ));
 
-    // Cell labels
-    GRID_CELLS.forEach(cell => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 96;
-        canvas.height = 48;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgba(100, 116, 139, 0.4)';
-        ctx.font = 'bold 22px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${cell.col},${cell.row}`, 48, 32);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.5 });
-        const sprite = new THREE.Sprite(spriteMat);
-        sprite.position.set(cell.cx, 0.01, mapZ(cell.cy));
-        sprite.scale.set(0.35, 0.18, 1);
-        group.add(sprite);
-    });
-
     return group;
 }
 scene.add(createFloor());
-
 // ═══════════════════════════════════════════════════════════════
 // Soft highlight that follows the character (no grid snap)
 // ═══════════════════════════════════════════════════════════════
@@ -320,7 +289,7 @@ function addTrailPoint(x, z) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Demo — smooth Lissajous path across the 4×2 space
+// Demo — smooth Lissajous path across the 3.2×3.0 space
 // ═══════════════════════════════════════════════════════════════
 function getDemoPosition(t) {
     const cx = AREA_W / 2, cy = AREA_H / 2;
@@ -390,8 +359,7 @@ function connectWebSocket(url) {
                     const cellCy = data.cell_row * CELL_H + CELL_H / 2;
                     state.targetPos.set(cellCx, 0, mapZ(cellCy));
                     state.speed = 0;
-                    const cell = { col: data.cell_col, row: data.cell_row };
-                    updateCoordsHUD(cellCx, cellCy, 0, 0, cell);
+                    updateCoordsHUD(data);
                 }
             } catch (e) { console.warn('[WS] Parse error:', e); }
         };
@@ -419,13 +387,50 @@ function updateWsBadge(status) {
     text.textContent = status === 'connected' ? 'Connected' : status === 'connecting' ? 'Connecting...' : 'Disconnected';
 }
 
-function updateCoordsHUD(x, y, z, speed, cell) {
-    document.getElementById('coord-x').textContent = x.toFixed(2);
-    document.getElementById('coord-y').textContent = y.toFixed(2);
-    document.getElementById('coord-z').textContent = z.toFixed(2);
-    document.getElementById('coord-speed').textContent = speed.toFixed(2);
-    const cellEl = document.getElementById('coord-cell');
-    if (cellEl && cell) cellEl.textContent = `(${cell.col},${cell.row})`;
+function updateCoordsHUD(data) {
+    if (data.debug && data.debug.raw_rssi) {
+        const rssi = data.debug.raw_rssi;
+        for (let i = 0; i < 4; i++) {
+            if (rssi[i] !== undefined) {
+                const el = document.getElementById(`val-r${i}`);
+                if(el) el.textContent = `${rssi[i].toFixed(1)} dBm`;
+                
+                let p = (rssi[i] - (-90)) / ( -30 - (-90) );
+                p = Math.max(0, Math.min(1, p));
+                
+                const fill = document.getElementById(`bar-r${i}`);
+                if(fill) {
+                    fill.style.width = `${p * 100}%`;
+                    if (rssi[i] < -85) fill.style.background = '#ef4444';
+                    else fill.style.background = '';
+                }
+            }
+        }
+    }
+
+    if (data.mode) {
+        const el = document.getElementById('engine-mode');
+        if(el) el.textContent = data.mode.toUpperCase();
+    }
+    
+    if (data.debug) {
+        if (data.debug.raw_cell) {
+            const el = document.getElementById('engine-cell');
+            if(el) el.textContent = `(${data.debug.raw_cell[0]}, ${data.debug.raw_cell[1]})`;
+        }
+        if (data.debug.voted_cell) {
+            const el = document.getElementById('engine-vote');
+            if(el) el.textContent = `(${data.debug.voted_cell[0]}, ${data.debug.voted_cell[1]})`;
+        }
+        if (data.debug.ensemble_confidence !== undefined) {
+            const el = document.getElementById('engine-conf');
+            if(el) el.textContent = `${(data.debug.ensemble_confidence * 100).toFixed(0)}%`;
+        }
+        if (data.debug.temporal_ratio !== undefined) {
+            const el = document.getElementById('engine-temp');
+            if(el) el.textContent = `${(data.debug.temporal_ratio * 100).toFixed(0)}%`;
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -452,7 +457,7 @@ document.getElementById('btn-trail').addEventListener('click', () => {
 });
 
 document.getElementById('btn-reset-view').addEventListener('click', () => {
-    camera.position.set(2, 5.5, 6.5);
+    camera.position.set(AREA_W / 2, 6, 7.5);
     controls.target.set(AREA_W / 2, 0, AREA_H / 2);
     controls.update();
 });
@@ -483,8 +488,26 @@ function animate() {
         state.targetPos.set(demoPos.x, 0, demoPos.y);
         const spd = state.currentPos.distanceTo(state.targetPos) / Math.max(dt, 0.001);
         state.speed = spd;
-        const cell = posToCell(demoPos.x, demoPos.y);
-        updateCoordsHUD(state.currentPos.x, state.currentPos.z, 0, Math.min(spd, 2), cell);
+        
+        // Mock data to feed the HUD in Demo Mode
+        const cCol = Math.floor(state.currentPos.x / CELL_W);
+        const cRow = Math.floor(mapZ(state.currentPos.z) / CELL_H);
+        updateCoordsHUD({
+            mode: 'demo',
+            debug: {
+                raw_cell: [cCol, cRow],
+                voted_cell: [cCol, cRow],
+                ensemble_confidence: 1.0,
+                temporal_ratio: 1.0,
+                // Simulate varying RSSI over time
+                raw_rssi: [
+                    -40 - 20 * Math.abs(Math.sin(elapsed)),
+                    -40 - 20 * Math.abs(Math.cos(elapsed)),
+                    -40 - 20 * Math.abs(Math.sin(elapsed + 1)),
+                    -40 - 20 * Math.abs(Math.cos(elapsed + 1))
+                ]
+            }
+        });
     }
 
     // Smooth LERP — continuous, fluid movement

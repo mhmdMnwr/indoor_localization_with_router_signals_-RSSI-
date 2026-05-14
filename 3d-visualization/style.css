@@ -166,55 +166,112 @@ html, body {
     50% { opacity: 0.4; }
 }
 
-/* ─── Coordinates HUD ────────────────────────────────────────── */
-#coords-hud {
+/* ─── RSSI & Engine HUD ────────────────────────────────────────── */
+#stats-hud {
     position: absolute;
     top: 80px;
     left: 24px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 16px 20px;
+    gap: 16px;
+    padding: 20px;
     background: var(--bg-glass);
     border: 1px solid var(--border-glass);
     border-radius: var(--radius-md);
     backdrop-filter: blur(16px);
-    min-width: 180px;
+    width: 280px;
 }
 
-.coord-item {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-
-.coord-label {
-    font-size: 11px;
-    font-weight: 600;
+#stats-hud h3 {
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     color: var(--text-muted);
-    width: 44px;
+    font-weight: 600;
 }
 
-.coord-value {
+.hud-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 4px 0;
+}
+
+.rssi-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rssi-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.router-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 20px;
+}
+
+.bar-bg {
+    flex-grow: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.2s ease-out, background-color 0.2s ease-out;
+}
+
+#bar-r0 { background: #60a5fa; box-shadow: 0 0 8px rgba(96, 165, 250, 0.5); }
+#bar-r1 { background: #a78bfa; box-shadow: 0 0 8px rgba(167, 139, 250, 0.5); }
+#bar-r2 { background: #fb923c; box-shadow: 0 0 8px rgba(251, 146, 60, 0.5); }
+#bar-r3 { background: #f472b6; box-shadow: 0 0 8px rgba(244, 114, 182, 0.5); }
+
+.rssi-val {
     font-family: var(--font-mono);
-    font-size: 18px;
-    font-weight: 500;
-    color: var(--accent);
-    min-width: 60px;
+    font-size: 12px;
+    color: var(--text-primary);
+    min-width: 58px;
     text-align: right;
 }
 
-.coord-unit {
-    font-size: 11px;
-    color: var(--text-muted);
+.engine-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.coord-divider {
-    height: 1px;
-    background: var(--border-subtle);
-    margin: 6px 0;
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.stat-value {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.stat-value.highlight {
+    color: var(--accent);
+    font-weight: 700;
+    text-shadow: 0 0 8px rgba(110, 231, 183, 0.4);
 }
 
 /* ─── Connection Panel ───────────────────────────────────────── */

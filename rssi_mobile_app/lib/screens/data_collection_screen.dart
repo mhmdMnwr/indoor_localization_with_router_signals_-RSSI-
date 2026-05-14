@@ -21,7 +21,7 @@ class DataCollectionScreen extends StatefulWidget {
 }
 
 class _DataCollectionScreenState extends State<DataCollectionScreen> {
-  static const int gridCols = 5;
+  static const int gridCols = 4;
   static const int gridRows = 3;
   static const int collectionDurationSec = 120; // 2 minutes
 
@@ -265,15 +265,15 @@ class _DataCollectionScreenState extends State<DataCollectionScreen> {
               const SizedBox(height: 16),
             ],
 
-            // Grid — 5×3 = 15 cells
+            // Grid — 4×3 = 12 cells
             Expanded(
               child: AspectRatio(
-                aspectRatio: 5 / 3,
+                aspectRatio: 4 / 3,
                 child: GridView.builder(
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: gridCols,
-                    childAspectRatio: 1.2,
+                    childAspectRatio: 1.0,
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 4,
                   ),

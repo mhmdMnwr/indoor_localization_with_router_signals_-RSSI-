@@ -35,33 +35,56 @@
             </div>
         </header>
 
-        <!-- Coordinates HUD -->
-        <div id="coords-hud">
-            <div class="coord-item">
-                <span class="coord-label">X</span>
-                <span class="coord-value" id="coord-x">1.00</span>
-                <span class="coord-unit">m</span>
+        <!-- RSSI & Engine HUD -->
+        <div id="stats-hud">
+            <h3>Live RSSI Signals</h3>
+            <div class="rssi-bars">
+                <div class="rssi-row">
+                    <span class="router-label">R0</span>
+                    <div class="bar-bg"><div class="bar-fill" id="bar-r0"></div></div>
+                    <span class="rssi-val" id="val-r0">-0 dBm</span>
+                </div>
+                <div class="rssi-row">
+                    <span class="router-label">R1</span>
+                    <div class="bar-bg"><div class="bar-fill" id="bar-r1"></div></div>
+                    <span class="rssi-val" id="val-r1">-0 dBm</span>
+                </div>
+                <div class="rssi-row">
+                    <span class="router-label">R2</span>
+                    <div class="bar-bg"><div class="bar-fill" id="bar-r2"></div></div>
+                    <span class="rssi-val" id="val-r2">-0 dBm</span>
+                </div>
+                <div class="rssi-row">
+                    <span class="router-label">R3</span>
+                    <div class="bar-bg"><div class="bar-fill" id="bar-r3"></div></div>
+                    <span class="rssi-val" id="val-r3">-0 dBm</span>
+                </div>
             </div>
-            <div class="coord-item">
-                <span class="coord-label">Y</span>
-                <span class="coord-value" id="coord-y">1.00</span>
-                <span class="coord-unit">m</span>
-            </div>
-            <div class="coord-item">
-                <span class="coord-label">Z</span>
-                <span class="coord-value" id="coord-z">0.00</span>
-                <span class="coord-unit">m</span>
-            </div>
-            <div class="coord-divider"></div>
-            <div class="coord-item">
-                <span class="coord-label">Speed</span>
-                <span class="coord-value" id="coord-speed">0.00</span>
-                <span class="coord-unit">m/s</span>
-            </div>
-            <div class="coord-divider"></div>
-            <div class="coord-item">
-                <span class="coord-label">Cell</span>
-                <span class="coord-value" id="coord-cell">(2,1)</span>
+
+            <div class="hud-divider"></div>
+            
+            <h3>Engine Process</h3>
+            <div class="engine-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Prediction Mode</span>
+                    <span class="stat-value" id="engine-mode">ensemble</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Predicted Cell</span>
+                    <span class="stat-value" id="engine-cell">(0,0)</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Voted Cell</span>
+                    <span class="stat-value highlight" id="engine-vote">(0,0)</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Model Agreement</span>
+                    <span class="stat-value" id="engine-conf">0%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Temporal Stabilizer</span>
+                    <span class="stat-value" id="engine-temp">0%</span>
+                </div>
             </div>
         </div>
 

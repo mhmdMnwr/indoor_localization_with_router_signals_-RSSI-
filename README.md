@@ -1,12 +1,12 @@
 # RSSI Indoor Positioning System
 
-Real-time indoor positioning using WiFi RSSI from 4 routers in a **4m × 2m room**.
+Real-time indoor positioning using WiFi RSSI from 4 routers in a **6.0m × 2.0m room**.
 
 ## Architecture
 
 ```
 Phone (Android)
-  │  WiFi RSSI scan
+  │  WiFi RSSI scan [Fast/Continuous]
   ▼
 WebSocket (/ws/mobile)
   │
@@ -14,9 +14,11 @@ WebSocket (/ws/mobile)
 ┌──────────────────────────────────────┐
 │         Python Backend (FastAPI)     │
 │                                      │
-│  1. EMA Smoothing (per-router)       │
-│  2. Weighted Centroid (RSSI→position)│
-│  3. Kalman Filter (smooth output)    │
+│  1. Extract Statistical Features     │
+│     (mean, std, median differences)  │
+│  2. Machine Learning Ensemble        │
+│     (RF, KNN, Gradient Boosting)     │
+│  3. Temporal Voting Filter           │
 └──────────────────────────────────────┘
   │
   ▼
@@ -29,22 +31,24 @@ WebSocket (/ws/frontend)
 ## Room Layout
 
 ```
-  R2 (0,2) ──────────────────── R3 (4,2)
-     │    5×3 grid (15 cells)     │
-     │  ┌───┬───┬───┬───┬───┐    │
-     │  │0,2│1,2│2,2│3,2│4,2│    │
-     │  ├───┼───┼───┼───┼───┤    │
-     │  │0,1│1,1│2,1│3,1│4,1│    │
-     │  ├───┼───┼───┼───┼───┤    │
-     │  │0,0│1,0│2,0│3,0│4,0│    │
-     │  └───┴───┴───┴───┴───┘    │
-  R0 (0,0) ──────────────────── R1 (4,0)
+  R2 ──────────────────── R3
+     │  4×3 grid (12 cells) │
+     │  ┌───┬───┬───┬───┐   │
+     │  │0,2│1,2│2,2│3,2│   │ 2.0m
+     │  ├───┼───┼───┼───┤   │
+     │  │0,1│1,1│2,1│3,1│   │
+     │  ├───┼───┼───┼───┤   │
+     │  │0,0│1,0│2,0│3,0│   │
+     │  └───┴───┴───┴───┘   │
+  R0 ──────────────────── R1
+            6.0m
 ```
 
 ## Quick Start
 
 ```bash
 # 1. Install dependencies
+cd rssi_calculation_backend_server
 pip install -r requirements.txt
 
 # 2. Start the server
@@ -53,136 +57,58 @@ python server.py
 # 3. Open the 3D visualization
 #    Open 3d-visualization/index.html in a browser
 
-# 4. Connect the mobile app or run the test client
-python test_client.py
+# 4. Connect the mobile app
+#    Run the companion Flutter app on an Android device to feed live data.
 ```
 
 ## File Structure
 
 ```
-├── config.py             # All tunable parameters
-├── engine.py             # Core: EMA + Weighted Centroid + Kalman
-├── server.py             # FastAPI server (WebSocket + REST)
-├── test_client.py        # Simulated phone for testing
-├── train_model.ipynb     # Jupyter notebook for KNN model training
-├── requirements.txt      # Python dependencies
-│
-├── 3d-visualization/     # Three.js frontend
-│   ├── index.html
-│   ├── app.js
+├── fingerprint_data.csv             # Collected RSSI training dataset
+├── 3d-visualization/                # Three.js frontend
+│   ├── index.html                   # Contains 3D Canvas and RSSI Glass Hud
+│   ├── app.js                       # Renders room, grid, furniture & handles WS
 │   └── style.css
 │
-└── rssi_mobile_app/      # Flutter Android app
+├── rssi_calculation_backend_server/ # Core backend logic
+│   ├── config.py                    # Room bounds, IPs, & cell settings 
+│   ├── engine.py                    # Robust ML Ensemble Model & Location Voting Filter
+│   ├── server.py                    # FastAPI server (WebSocket + REST)
+│   ├── train_model.ipynb            # Generates the ML `.pkl` models
+│   ├── requirements.txt             # Python dependencies
+│   └── *.pkl                        # Compiled Scikit-Learn models
+│
+└── rssi_mobile_app/                 # Flutter Android app
     └── lib/
         ├── main.dart
-        ├── theme.dart
         ├── screens/
-        │   ├── home_screen.dart
-        │   ├── settings_screen.dart
-        │   └── data_collection_screen.dart
+        │   ├── home_screen.dart           # View continuous RSSI scans
+        │   ├── settings_screen.dart       # Enter Router Addresses
+        │   └── data_collection_screen.dart# Gather ML fingerprint data
         └── services/
-            ├── websocket_service.dart
-            └── wifi_scanner_service.dart
 ```
-
-## API Endpoints
-
-### WebSocket
-
-| Endpoint | Direction | Purpose |
-|---|---|---|
-| `ws://HOST:6060/ws/mobile` | Phone → Server | Send `{"rssi": [-45, -50, -60, -55]}` |
-| `ws://HOST:6060/ws/frontend` | Server → Browser | Receive `{"x": 1.23, "y": 0.67, ...}` |
-
-### REST
-
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/health` | GET | Server status |
-| `/collect` | POST | Save fingerprint: `{"cell_col": 2, "cell_row": 1, "rssi": [-45, -50, -60, -55]}` |
-| `/collect/status` | GET | Sample counts per cell |
-| `/collect/reset` | DELETE | Clear all collected data |
 
 ## Positioning Engine
 
-### How It Works
+The engine uses advanced **Machine Learning Ensemble Voting** to map raw radio frequencies to an exact point on the grid.
 
-The engine uses **3 stages** — no distance calculation, no trilateration:
+### 1. Feature Extraction
+Because RSSI is extremely noisy indoors, predicting based purely on instantaneous signals is flawed. The engine caches the last few packets on a rolling window, resolving:
+- **Means & Medians** representing core signal strength.
+- **Relative Subtractions** representing geometric distance hierarchies regardless of network traffic dropoffs.
 
-1. **EMA Smoothing** — Simple exponential moving average per router to reduce RSSI noise
-2. **Weighted Centroid** — Converts RSSI to position using power-law weights:
-   - `weight = 10^(RSSI/10)` (dBm → milliwatts)
-   - Apply sharpness exponent to increase contrast
-   - Position = weighted average of router locations
-3. **Kalman Filter** — Smooths the trajectory with a constant-velocity model
+### 2. Weighted Voting
+All `.pkl` machine learning models (like Random Forest, KNN with Manhattan Distances, Gradient Boosting) stored in the backend cast their votes on which cell the user is in. Votes are inversely weighted based on their cross-validation RMSE performance. 
 
-### Why Not Trilateration?
+### 3. Temporal Constraints
+To stop erratic jumping while still remaining responsive:
+- **`VOTE_WINDOW=3`, `SUPERMAJORITY=0.4`:** Validates sustained probability across time before drifting the visual cursor.
+- **`MAX_CELL_JUMP=5`:** Prevents teleportation across the entire room matrix in a single frame unless the confidence override limit triggers.
 
-RSSI cannot give accurate distances indoors (multipath, walls, body absorption). But RSSI **can** tell you which router is closest. Weighted centroid only needs relative proximity — it's inherently more stable than trilateration for demo environments.
+## Training Custom Models
 
-## Tuning
-
-Only 3 parameters matter:
-
-```python
-# config.py
-EMA_ALPHA = 0.3       # 0.2=smoother  0.4=faster
-SHARPNESS = 2.0       # 1.0=center-biased  3.0=aggressive corners
-PROCESS_NOISE = 0.1   # Lower=smoother  Higher=more responsive
-```
-
-| Symptom | Fix |
-|---|---|
-| Dot clusters at center | Increase `SHARPNESS` (try 2.5 or 3.0) |
-| Dot too jittery | Lower `EMA_ALPHA` (try 0.2) |
-| Dot lags behind movement | Increase `PROCESS_NOISE` (try 0.2) |
-| Dot overshoots | Increase `MEASUREMENT_NOISE` (try 0.5) |
-
-## Fingerprint Data Collection
-
-For better accuracy, collect RSSI fingerprints at each of the 15 grid cells:
-
-### Step 1: Collect Data
-
-1. Open the **Data Collection** screen in the mobile app
-2. Tap a grid cell (e.g., `(2,1)`)
-3. Stand at that cell's physical location
-4. Press **START** — collects for 2 minutes (1 sample/second = ~120 samples)
-5. Repeat for all 15 cells
-
-### Step 2: Train Model
-
-```bash
-jupyter notebook train_model.ipynb
-```
-
-The notebook:
-- Loads `fingerprint_data.csv`
-- Visualizes RSSI distributions per cell
-- Trains a KNN model with cross-validation
-- Saves `knn_model.pkl`
-
-### Step 3: Use Model
-
-The server can load `knn_model.pkl` for KNN-based positioning (future upgrade).
-
-## Test Client
-
-```bash
-# Circle pattern (default)
-python test_client.py
-
-# Listen as frontend
-python test_client.py frontend
-```
-
-## Mobile App Setup
-
-```bash
-cd rssi_mobile_app
-flutter pub get
-flutter run
-```
-
-Configure the 4 router BSSIDs in the app's Settings screen.
-# indoor_localization_with_router_signals_-RSSI-
+To train on your own layout:
+1. Load `rssi_mobile_app`, navigate to the `Data Collection` route.  
+2. Collect samples at every physical cell in the grid.
+3. Open `train_model.ipynb` in the backend. Click **"Run All"**.
+4. The notebook will automatically wipe/re-generate all `_model.pkl` files based on the `.csv` at the root folder.
