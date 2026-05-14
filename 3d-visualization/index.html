@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSSI Indoor Positioning — 3D Visualization</title>
+    <meta name="description" content="Real-time 3D indoor positioning visualization using RSSI trilateration">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Overlay UI -->
+    <div id="ui-overlay">
+        <header id="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="3" fill="#6ee7b7"/>
+                        <circle cx="12" cy="12" r="6" stroke="#6ee7b7" stroke-width="1.5" fill="none" opacity="0.6"/>
+                        <circle cx="12" cy="12" r="10" stroke="#6ee7b7" stroke-width="1" fill="none" opacity="0.3"/>
+                    </svg>
+                </div>
+                <h1>Indoor Positioning</h1>
+            </div>
+            <div class="status-badges">
+                <div class="badge" id="badge-mode">
+                    <span class="badge-dot demo"></span>
+                    <span id="mode-text">Demo Mode</span>
+                </div>
+                <div class="badge" id="badge-ws">
+                    <span class="badge-dot disconnected"></span>
+                    <span id="ws-text">Disconnected</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Coordinates HUD -->
+        <div id="coords-hud">
+            <div class="coord-item">
+                <span class="coord-label">X</span>
+                <span class="coord-value" id="coord-x">1.00</span>
+                <span class="coord-unit">m</span>
+            </div>
+            <div class="coord-item">
+                <span class="coord-label">Y</span>
+                <span class="coord-value" id="coord-y">1.00</span>
+                <span class="coord-unit">m</span>
+            </div>
+            <div class="coord-item">
+                <span class="coord-label">Z</span>
+                <span class="coord-value" id="coord-z">0.00</span>
+                <span class="coord-unit">m</span>
+            </div>
+            <div class="coord-divider"></div>
+            <div class="coord-item">
+                <span class="coord-label">Speed</span>
+                <span class="coord-value" id="coord-speed">0.00</span>
+                <span class="coord-unit">m/s</span>
+            </div>
+            <div class="coord-divider"></div>
+            <div class="coord-item">
+                <span class="coord-label">Cell</span>
+                <span class="coord-value" id="coord-cell">(2,1)</span>
+            </div>
+        </div>
+
+        <!-- Connection Panel -->
+        <div id="connection-panel">
+            <h3>WebSocket Connection</h3>
+            <div class="input-group">
+                <label for="ws-url">Server URL</label>
+                <input type="text" id="ws-url" placeholder="ws://host:port/ws/frontend">
+            </div>
+            <div class="btn-row">
+                <button id="btn-connect" class="btn btn-primary">Connect</button>
+                <button id="btn-demo" class="btn btn-secondary active">Demo Mode</button>
+            </div>
+        </div>
+
+        <!-- Trail toggle -->
+        <div id="controls-bottom">
+            <button id="btn-trail" class="btn btn-ghost active" title="Toggle trail">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8"/>
+                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+                Trail
+            </button>
+            <button id="btn-reset-view" class="btn btn-ghost" title="Reset camera">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 4v6h6M23 20v-6h-6"/>
+                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                </svg>
+                Reset View
+            </button>
+        </div>
+    </div>
+
+    <!-- Three.js Canvas goes here -->
+    <div id="canvas-container"></div>
+
+    <script>
+        // Auto-detect server host from current page URL
+        const serverHost = window.location.hostname || 'localhost';
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('ws-url').value = 'ws://' + serverHost + ':6060/ws/frontend';
+        });
+    </script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
